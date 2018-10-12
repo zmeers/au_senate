@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<style>
+
+.d3-tip {
+    line-height: 1;
+    position: absolute;
+    margin: 0 auto;
+    padding: 5px;
+    max-width: 220px;
+    background: rgba(0, 0, 0, 0.8);
+    color: #fff;
+    border-radius: 1px;
+    font-family: "Helvetica";
+    }
+
+div {
+    /*position: absolute;*/
+    top:0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    margin: auto;
+    width: 600px;
+    height: 400px;
+    background-color: white;
+}    
+
+</style>
+<body>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3.min.js"></script>
+
+<script>
+
+// standard d3 plot setup
+var margin = {top: 5, right: 20, bottom: 30, left: 40},
+    width = 300 - margin.left - margin.right,
+    height = 300 - margin.top - margin.bottom;
+
+var x = d3.scale.linear()
+    .range([0, width]);
+
+var y = d3.scale.linear()
+    .range([height, 0]);
+
+
+
+var svg = d3.select("body").append("svg")
+    .attr("width", 600)
+    .attr("height", 300)
+  .append("g")
+    .attr("preserveAspectRatio", "xMinYMin meet")
+     .attr("transform", "translate(300, 10)")
+     .attr("viewBox", "0 0 600 300");
+    
+// Define the div for the tooltip
+var div = d3.select("body").append("div") 
+    .attr("width", 1000)
+    .attr("height", 1000)
+    .attr("class", "tooltip")       
+    .style("opacity", 0);
+
+
+
+d3.csv("ggparliament_senate.csv", function(d){
+  return {
+    x: +d.x,
+    y: +d.y,
+    first_name: d.first_name,
+    surname: d.surname,
+    state: d.state,
+    colour: d.colour,
+    political_party: d.political_party
+  }
+}, function(error, data) {
+  console.log(data);  
+
+  
+  // standard axis stuff
+  x.domain([0, d3.max(data, function(d) { return d.x; })]);
+  y.domain([0, d3.max(data, function(d) { return d.y; })]);
+
+
+  // draw a point g
+  var point = svg.selectAll(".point")
+    .data(data)
+    .enter()
+  .append("g")
+    .attr("class", "point");
+    
+  // add circle
+  point.append("circle")
+    .attr("cx", function(d) { return x(d.x); })
+    .attr("r", 7)
+    .attr("cy", function(d) { return y(d.y); })
+    .style("fill", function(d){ return d.colour; })
+    .on("mouseover", function(d) {    
+            div.transition()    
+                .duration(30)    
+                .style("opacity", 0.9);    
+            div .html("<b>Senator " + 
+                     d.first_name + " " + 
+                     d.surname +
+                      "<b/> <br/> State: "  +
+                     d.state + "<br/> Political party: " + 
+                     d.political_party)  
+                .style("left", (d3.event.pageX) + "px")   
+                .style("top", (d3.event.pageY) + "px")
+                .style();  
+            })          
+    .on("mouseout", function(d) {   
+            div.transition()    
+                .duration(30)    
+                .style("opacity", 0); 
+        });
+
+  
+    
+});
+
+</script>
+</body>
+</html>
+    

@@ -1,0 +1,82 @@
+---
+title: "Australian Senate data visualisation"
+author: "Zoe Meers"
+date: "12/10/2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(here)
+library(ggparliament)
+library(r2d3)
+#here()
+```
+
+
+# Load data on Senators from APH website
+
+```{r}
+senate_info <- read.csv(here("data","allsenparty.csv")) %>% 
+    janitor::clean_names()
+# list all unique political parties
+#unique(senate_info$political_party) 
+# reorder factors for plotting
+senate_info$political_party <- factor(senate_info$political_party, 
+                                      levels=c("ALP", "AG", "AC", "CA", 
+                                               "CLP", "DHJP", "IND", "KAP", 
+                                               "LDP","PHON", "UAP", "Nats", "LP"))
+new_senate_info <- senate_info[order(senate_info$political_party),]
+```
+
+```{r}
+# grab aggregate data for ggparliament
+ggparliament_senate <- new_senate_info %>% 
+    count(political_party) %>% # count members by party
+    mutate(colour = case_when( # add party colours
+        political_party == "ALP" ~ "#F00011",
+        political_party == "AG" ~ "#10C25B",
+        political_party == "AC" ~ "#33CCFF",
+        political_party == "CA" ~ "#FF6600",
+        political_party == "CLP" ~ "#FF6600",
+        political_party == "DHJP" ~ "#002F5D",
+        political_party == "IND" ~ "#808080",
+        political_party == "KAP" ~ "#CC0000",
+        political_party == "LDP" ~ "#F9E518",
+        political_party == "PHON" ~ "#F8F16F",
+        political_party == "UAP" ~ "#FFFF66",
+        political_party == "Nats" ~ "#006600",
+        political_party == "LP" ~ "#003399"
+    )) %>% 
+    parliament_data(election_data = ., # get x and y coordinates for legislature
+                    parl_rows = 3,
+                    type = 'horseshoe',
+                    party_seats = .$n) %>% 
+    mutate() %>% 
+    bind_cols(new_senate_info) %>% 
+    mutate(political_party == as.character(as.factor(political_party)))
+write.csv(ggparliament_senate, file = here("ggparliament_senate.csv"))
+```
+
+# Static ggparliament graph 
+
+```{r}
+ggplot(ggparliament_senate, aes(x, y, colour =  as.character(political_party))) + 
+    geom_parliament_seats(size = 6) +
+    theme_ggparliament() +
+    scale_colour_manual(values = ggparliament_senate$colour,
+                        limits = as.character(ggparliament_senate$political_party)) +
+    labs(color = "Political party") + 
+    theme(legend.position = 'bottom') + 
+    guides(colour = guide_legend(title.position = "top"))
+```
+
+# R2D3 graph 
+
+```{r}
+r2d3(data=ggparliament_senate, 
+     script = "r2d3ggparliament_script.js", 
+     d3_version = "3")
+```
+
